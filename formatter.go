@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/mgutz/ansi"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -285,7 +285,11 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 	}
 
 	if f.DisableTimestamp {
-		fmt.Fprintf(b, "%s"+ prefixFormat + " " + messageFormat, level, prefix, message)
+		if message == "" {
+			fmt.Fprintf(b, "%s%s", level, prefix)
+		} else {
+			fmt.Fprintf(b, "%s"+prefixFormat+" "+messageFormat, level, prefix, message)
+		}
 	} else {
 		var timestamp string
 		if !f.FullTimestamp {
@@ -293,8 +297,16 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 		} else {
 			timestamp = fmt.Sprintf("[%s]", entry.Time.Format(timestampFormat))
 		}
-		fmt.Fprintf(b, "%s %s" + prefixFormat + " " + messageFormat, colorScheme.TimestampColor(timestamp), level, prefix, message)
+
+		coloredTimestamp := colorScheme.TimestampColor(timestamp)
+
+		if message == "" {
+			fmt.Fprintf(b, "%s %s%s", coloredTimestamp, level, prefix)
+		} else {
+			fmt.Fprintf(b, "%s %s"+prefixFormat+" "+messageFormat, coloredTimestamp, level, prefix, message)
+		}
 	}
+
 	for _, k := range keys {
 		if k != "prefix" {
 			v := entry.Data[k]
