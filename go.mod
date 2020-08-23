@@ -1,4 +1,4 @@
-module github.com/cjbassi/logrus-prefixed-formatter
+module github.com/BertoldVdb/logrus-prefixed-formatter
 
 require (
 	github.com/mattn/go-colorable v0.0.9 // indirect
