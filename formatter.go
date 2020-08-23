@@ -223,13 +223,34 @@ func (f *TextFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	}
 
 	b.WriteByte('\n')
-	return b.Bytes(), nil
+    out := b.Bytes()
+
+    cntLen := 0;
+    escaped := false;
+    for i,m := range out{
+        if m == 27 {
+            escaped = true
+        }
+        if !escaped {
+            cntLen ++
+            if cntLen == 207 {
+                out = append(out[:i], []byte{'.','.','.','\n'}...)
+            }
+        }
+        if m == 'm' {
+            escaped = false
+        }
+    }
+
+	return out, nil
 }
 
 func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys []string, timestampFormat string, colorScheme *compiledColorScheme) {
 	var levelColor func(string) string
 	var levelText string
 	switch entry.Level {
+    case logrus.DebugLevel:
+		levelColor = colorScheme.DebugLevelColor
 	case logrus.InfoLevel:
 		levelColor = colorScheme.InfoLevelColor
 	case logrus.WarnLevel:
@@ -241,7 +262,7 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 	case logrus.PanicLevel:
 		levelColor = colorScheme.PanicLevelColor
 	default:
-		levelColor = colorScheme.DebugLevelColor
+		levelColor = colorScheme.TimestampColor
 	}
 
 	if entry.Level != logrus.WarnLevel {
@@ -270,7 +291,9 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 		if len(prefixValue) > 0 {
 			prefix = colorScheme.PrefixColor(" " + prefixValue + ":")
 			message = trimmedMsg
-		}
+		}else{
+            prefix = "  "
+        }
 		adjustedPrefixPadding = f.PrefixPadding + (len(prefix) - rawPrefixLength - 1)
 	}
 
@@ -308,9 +331,10 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 	}
 
 	for _, k := range keys {
-		if k != "prefix" {
+		if k != "prefix" && len(k) >= 1 {
+            d := k[1:]
 			v := entry.Data[k]
-			fmt.Fprintf(b, " %s=%+v", levelColor(k), v)
+			fmt.Fprintf(b, " %s=%+v", levelColor(d), v)
 		}
 	}
 }
